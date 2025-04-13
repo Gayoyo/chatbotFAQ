@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Admin Panel - FAQ Chatbot</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body {
+      background-color: #f1f4f9;
+    }
+    .sidebar {
+      height: 100vh;
+      background-color: #343a40;
+      padding-top: 20px;
+      position: fixed;
+      width: 220px;
+      color: white;
+    }
+    .sidebar a {
+      color: white;
+      display: block;
+      padding: 10px 20px;
+      text-decoration: none;
+    }
+    .sidebar a:hover {
+      background-color: #495057;
+    }
+    .main-content {
+      margin-left: 220px;
+      padding: 30px;
+    }
+    .topbar {
+      background-color: #ffffff;
+      padding: 10px 20px;
+      border-bottom: 1px solid #ddd;
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+    }
+    .card {
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    .list-group-item {
+      border: 1px solid #e5e5e5;
+      border-radius: 8px;
+      margin-bottom: 10px;
+      padding: 16px;
+    }
+    @media (max-width: 768px) {
+      .sidebar {
+        display: none;
+      }
+      .main-content {
+        margin-left: 0;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <h5 class="text-center mb-4">⚙️ Admin Menu</h5>
+    <a href="#">📋 FAQ</a>
+    <a href="#">📁 Upload CSV</a>
+    <a href="#">🔐 Logout</a>
+  </div>
+
+  <!-- Main Content -->
+  <div class="main-content">
+    <!-- Topbar -->
+    <div class="topbar d-flex justify-content-between align-items-center">
+      <span><strong>Admin Panel</strong></span>
+      <span>👤 Admin</span>
+    </div>
+
+    <!-- Content -->
+    <div class="container-fluid mt-4">
+      <div class="card p-4">
+        <h3 class="text-center mb-4">🛠️ Admin Panel - FAQ Chatbot</h3>
+
+        <!-- Flash Message -->
+        {% with messages = get_flashed_messages() %}
+          {% if messages %}
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+              {{ messages[0] }}
+              <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+          {% endif %}
+        {% endwith %}
+
+        <!-- Chat Form -->
+        <form id="chat-form" class="mb-4">
+          <div class="input-group">
+            <input type="text" class="form-control" id="message" placeholder="Tulis pertanyaanmu..." required>
+            <button type="submit" class="btn btn-primary">Kirim</button>
+          </div>
+        </form>
+        <div id="response" class="chat-response alert alert-info d-none"></div>
+
+        <!-- Tambah FAQ -->
+        <div class="mb-4">
+          <h5>➕ Tambah FAQ Baru</h5>
+          <form method="POST" action="{{ url_for('add_faq') }}">
+            <div class="mb-3">
+              <input type="text" name="new_question" class="form-control" placeholder="Pertanyaan baru" required>
+            </div>
+            <div class="mb-3">
+              <textarea name="new_answer" class="form-control" rows="2" placeholder="Jawaban..." required></textarea>
+            </div>
+            <button type="submit" class="btn btn-success">Tambah FAQ</button>
+          </form>
+        </div>
+
+        <!-- Upload CSV -->
+        <div class="mb-4">
+          <h5>📁 Upload FAQ via CSV</h5>
+          <form method="POST" action="{{ url_for('upload') }}" enctype="multipart/form-data">
+            <div class="input-group">
+              <input type="file" name="csv_file" class="form-control" accept=".csv" required>
+              <button class="btn btn-outline-primary" type="submit">Upload</button>
+            </div>
+          </form>
+        </div>
+
+        <!-- Daftar FAQ -->
+        <div>
+          <h5>📋 Daftar FAQ Saat Ini:</h5>
+          <ul class="list-group">
+            {% for item in data %}
+              <li class="list-group-item d-flex justify-content-between align-items-center">
+                <div class="me-2">
+                  <strong>{{ item.question }}</strong><br>
+                  <span class="text-muted">{{ item.answer }}</span>
+                </div>
+                <div class="btn-group">
+                  <button class="btn btn-sm btn-warning me-2" data-bs-toggle="modal" data-bs-target="#editModal{{ item.id }}">Edit</button>
+                  <a href="{{ url_for('delete_faq', id=item.id) }}" class="btn btn-sm btn-danger" onclick="return confirm('Yakin ingin menghapus?')">Hapus</a>
+                </div>
+              </li>
+
+              <!-- Modal Edit -->
+              <div class="modal fade" id="editModal{{ item.id }}" tabindex="-1" aria-labelledby="editModalLabel{{ item.id }}" aria-hidden="true">
+                <div class="modal-dialog">
+                  <form method="POST" action="{{ url_for('update_faq', id=item.id) }}">
+                    <div class="modal-content">
+                      <div class="modal-header">
+                        <h5 class="modal-title" id="editModalLabel{{ item.id }}">Edit FAQ</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                      </div>
+                      <div class="modal-body">
+                        <div class="mb-3">
+                          <label>Pertanyaan</label>
+                          <input type="text" name="question" class="form-control" value="{{ item.question }}" required>
+                        </div>
+                        <div class="mb-3">
+                          <label>Jawaban</label>
+                          <textarea name="answer" class="form-control" rows="3" required>{{ item.answer }}</textarea>
+                        </div>
+                      </div>
+                      <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                        <button type="submit" class="btn btn-primary">Simpan Perubahan</button>
+                      </div>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            {% else %}
+              <li class="list-group-item">Belum ada data.</li>
+            {% endfor %}
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- JavaScript -->
+  <script>
+    const form = document.getElementById("chat-form");
+    const messageInput = document.getElementById("message");
+    const responseBox = document.getElementById("response");
+
+    form.addEventListener("submit", function (e) {
+      e.preventDefault();
+      const message = messageInput.value;
+
+      fetch("/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: "message=" + encodeURIComponent(message)
+      })
+      .then(res => res.json())
+      .then(data => {
+        responseBox.textContent = data.response;
+        responseBox.classList.remove("d-none");
+        messageInput.value = "";
+      });
+    });
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
