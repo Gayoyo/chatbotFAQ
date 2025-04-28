@@ -1,1 +1,1 @@
-web: gunicorn gabot:app
+web: python gabot.py
