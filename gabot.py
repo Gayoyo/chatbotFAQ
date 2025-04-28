@@ -13,9 +13,9 @@ app.secret_key = "rahasia-super-unik-123"
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///faq.db'
 db = SQLAlchemy(app)
 
-@app.route('/')
-def hello():
-    return "Hello from Railway!"
+@app.route('/healthz')
+def healthz():
+    return "OK"
 
 # Models
 class ChatbotResponse(db.Model):
